@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,11 +59,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -78,11 +86,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 
 private const val TAG = "SettingsScreen"
 private const val SSL_PORT = "465"
 private const val NON_SSL_PORT = "587"
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SettingsScreen(
     settings: SMTPSettings?,
@@ -94,6 +108,17 @@ fun SettingsScreen(
     val preferencesManager = remember { PreferencesManager(context) }
     val emailService = remember { EmailService() }
     val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    
+    // Focus requesters for each field
+    val hostFocusRequester = remember { FocusRequester() }
+    val portFocusRequester = remember { FocusRequester() }
+    val usernameFocusRequester = remember { FocusRequester() }
+    val passwordFocusRequester = remember { FocusRequester() }
+    val senderEmailFocusRequester = remember { FocusRequester() }
+    val recipientEmailFocusRequester = remember { FocusRequester() }
     
     var host by remember { mutableStateOf(settings?.host ?: "") }
     var port by remember { mutableStateOf(settings?.port?.toString() ?: NON_SSL_PORT) }
@@ -139,12 +164,25 @@ fun SettingsScreen(
         }
     }
     
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                // Dismiss keyboard when clicking outside input fields
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding() // Add padding for the keyboard
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = 24.dp, vertical = 16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -168,7 +206,17 @@ fun SettingsScreen(
                 onValueChange = { host = it },
                 label = { Text(stringResource(R.string.smtp_host)) },
                 placeholder = { Text("smtp.gmail.com") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(hostFocusRequester)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            coroutineScope.launch {
+                                // Scroll to this field when focused
+                                scrollState.animateScrollTo(0)
+                            }
+                        }
+                    },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 leadingIcon = { 
@@ -202,7 +250,18 @@ fun SettingsScreen(
                     onValueChange = { port = it },
                     label = { Text(stringResource(R.string.smtp_port)) },
                     placeholder = { Text(if (useSSL) SSL_PORT else NON_SSL_PORT) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(portFocusRequester)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                coroutineScope.launch {
+                                    // Scroll to this field when focused
+                                    val scrollPosition = scrollState.maxValue * 0.2f
+                                    scrollState.animateScrollTo(scrollPosition.toInt())
+                                }
+                            }
+                        },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -245,7 +304,17 @@ fun SettingsScreen(
                 onValueChange = { username = it },
                 label = { Text(stringResource(R.string.smtp_username)) },
                 placeholder = { Text("your.email@gmail.com") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(usernameFocusRequester)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            coroutineScope.launch {
+                                // Scroll to this field when focused
+                                scrollState.animateScrollTo(0)
+                            }
+                        }
+                    },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 leadingIcon = { 
@@ -274,7 +343,17 @@ fun SettingsScreen(
                 onValueChange = { password = it },
                 label = { Text(stringResource(R.string.smtp_password)) },
                 placeholder = { Text("password or app password") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(passwordFocusRequester)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            coroutineScope.launch {
+                                // Scroll to this field when focused
+                                scrollState.animateScrollTo(0)
+                            }
+                        }
+                    },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -313,7 +392,18 @@ fun SettingsScreen(
                 onValueChange = { senderEmail = it },
                 label = { Text(stringResource(R.string.sender_email)) },
                 placeholder = { Text("your.email@gmail.com") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(senderEmailFocusRequester)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            coroutineScope.launch {
+                                // Calculate approximate position to scroll to
+                                val scrollPosition = scrollState.maxValue * 0.7f
+                                scrollState.animateScrollTo(scrollPosition.toInt())
+                            }
+                        }
+                    },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -343,7 +433,17 @@ fun SettingsScreen(
                 onValueChange = { recipientEmail = it },
                 label = { Text(stringResource(R.string.recipient_email)) },
                 placeholder = { Text("recipient@example.com") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(recipientEmailFocusRequester)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            coroutineScope.launch {
+                                // Scroll to bottom when this field is focused
+                                scrollState.animateScrollTo(scrollState.maxValue)
+                            }
+                        }
+                    },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -374,6 +474,10 @@ fun SettingsScreen(
             ) {
                 OutlinedButton(
                     onClick = {
+                        // Hide keyboard when button is clicked
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        
                         Log.d(TAG, "Test connection button clicked")
                         isTesting = true
                         
@@ -458,6 +562,10 @@ fun SettingsScreen(
                 
                 Button(
                     onClick = {
+                        // Hide keyboard when button is clicked
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        
                         Log.d(TAG, "Save settings button clicked")
                         isSaving = true
                         
@@ -538,7 +646,8 @@ fun SettingsScreen(
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            // Add extra space at the bottom to ensure the buttons are visible above the keyboard
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
