@@ -1,0 +1,206 @@
+# Gradle files
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+**/build/
+captures/
+
+# Local configuration file (sdk path, etc)
+local.properties
+keystore.properties
+
+# IntelliJ IDEA / Android Studio
+*.iml
+*.iws
+*.ipr
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/compiler.xml
+.idea/jarRepositories.xml
+.idea/deploymentTargetDropDown.xml
+.idea/misc.xml
+.idea/gradle.xml
+.idea/kotlinc.xml
+.idea/kotlinScripting.xml
+.idea/vcs.xml
+.idea/.name
+.idea/.gitignore
+.idea/artifacts
+.idea/modules
+.idea/shelf
+.idea/dataSources
+.idea/dataSources.ids
+.idea/dataSources.local.xml
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+.idea/encodings.xml
+.idea/codeStyles/
+.idea/inspectionProfiles/
+.idea/runConfigurations.xml
+.idea/scopes/
+.idea/dictionaries/
+.idea/codeStyleSettings.xml
+.idea/copyright/
+.idea/jsLibraryMappings.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/checkstyle-idea.xml
+.idea/sonarlint/
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/render.experimental.xml
+.idea/kotlinScripting.xml
+.idea/migrations.xml
+.idea/libraries-with-intellij-classes.xml
+.idea/appInsightsSettings.xml
+.idea/artifacts/
+.idea/compiler.xml
+.idea/jarRepositories.xml
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/gradle.xml
+.idea/misc.xml
+.idea/kotlinc.xml
+.idea/vcs.xml
+.idea/deploymentTargetDropDown.xml
+.idea/render.experimental.xml
+.idea/kotlinScripting.xml
+.idea/migrations.xml
+.idea/libraries-with-intellij-classes.xml
+.idea/appInsightsSettings.xml
+
+# Android Studio generated files and folders
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+.navigation/
+output.json
+output-metadata.json
+
+# Xcode
+xcuserdata/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.moved-aside
+DerivedData
+.DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Node.js / JavaScript
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnp/
+.pnp.js
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Kotlin/Native
+*.klib
+*.kexe
+konan/
+
+# Kotlin/JS
+kotlin-js-store/
+
+# Kotlin Multiplatform Mobile
+.externalNativeBuild/
+.cxx/
+
+# Log Files
+*.log
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Crashlytics
+crashlytics.properties
+crashlytics-build.properties
+com_crashlytics_export_strings.xml
+fabric.properties
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/readme.md
+
+# R8/ProGuard
+proguard/
+
+# Keystore files
+*.jks
+*.keystore
+
+# External native build folder generated in Android Studio
+.externalNativeBuild
+.cxx/
+
+# Version control
+vcs.xml
+
+# lint
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+
+# Android Profiling
+*.hprof
+
+# Temporary files
+*~
+*.tmp
+*.bak
+*.swp
