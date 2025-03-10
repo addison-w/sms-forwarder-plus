@@ -182,6 +182,7 @@ proguard/
 # Keystore files
 *.jks
 *.keystore
+keystore/
 
 # External native build folder generated in Android Studio
 .externalNativeBuild
