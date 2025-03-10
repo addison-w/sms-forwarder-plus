@@ -24,6 +24,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,6 +87,16 @@ fun SMSForwarderApp(
     
     var showConnectionResult by remember { mutableStateOf<String?>(null) }
     
+    // Reset navigation controller state when connection result is shown and dismissed
+    LaunchedEffect(showConnectionResult) {
+        if (showConnectionResult == null) {
+            // This ensures the navigation state is refreshed
+            navController.currentBackStackEntry?.let { entry ->
+                entry.savedStateHandle["refreshNavigation"] = System.currentTimeMillis()
+            }
+        }
+    }
+    
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -93,9 +105,33 @@ fun SMSForwarderApp(
             topBar = {
                 AppTopBar(
                     currentRoute = currentRoute,
-                    onNavigateToHome = { navController.navigate(Screen.Home.route) },
-                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
-                    onNavigateToAbout = { navController.navigate(Screen.About.route) }
+                    onNavigateToHome = { 
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToSettings = { 
+                        navController.navigate(Screen.Settings.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToAbout = { 
+                        navController.navigate(Screen.About.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             },
             bottomBar = {
@@ -113,6 +149,11 @@ fun SMSForwarderApp(
                             label = screen.label,
                             selected = selected,
                             onClick = {
+                                // Clear any connection result when navigating
+                                if (showConnectionResult != null) {
+                                    showConnectionResult = null
+                                }
+                                
                                 navController.navigate(screen.route) {
                                     // Pop up to the start destination of the graph to
                                     // avoid building up a large stack of destinations
@@ -181,9 +222,13 @@ fun SMSForwarderApp(
                     composable(Screen.Settings.route) {
                         SettingsScreen(
                             settings = settings,
-                            onConnectionResult = { result -> showConnectionResult = result },
+                            onConnectionResult = { result -> 
+                                showConnectionResult = result
+                            },
                             connectionResult = showConnectionResult,
-                            onConnectionResultShown = { showConnectionResult = null }
+                            onConnectionResultShown = { 
+                                showConnectionResult = null
+                            }
                         )
                     }
                     

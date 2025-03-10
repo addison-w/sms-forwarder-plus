@@ -107,10 +107,28 @@ fun SettingsScreen(
     var isTesting by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     
+    // Handle connection result
     LaunchedEffect(connectionResult) {
         if (connectionResult != null) {
-            snackbarHostState.showSnackbar(connectionResult)
-            onConnectionResultShown()
+            try {
+                snackbarHostState.showSnackbar(connectionResult)
+            } finally {
+                // Always call onConnectionResultShown to ensure navigation state is reset
+                onConnectionResultShown()
+            }
+        }
+    }
+    
+    // Reset UI state when settings change
+    LaunchedEffect(settings) {
+        if (settings != null) {
+            host = settings.host
+            port = settings.port.toString()
+            username = settings.username
+            password = settings.password
+            senderEmail = settings.senderEmail
+            recipientEmail = settings.recipientEmail
+            useSSL = settings.useSSL
         }
     }
     
