@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Send
@@ -28,8 +30,11 @@ import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -42,6 +47,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -61,11 +68,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.smsforwarderplus.R
 import com.smsforwarderplus.data.PreferencesManager
 import com.smsforwarderplus.data.SMTPSettings
 import com.smsforwarderplus.email.EmailService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -84,7 +94,6 @@ fun SettingsScreen(
     val preferencesManager = remember { PreferencesManager(context) }
     val emailService = remember { EmailService() }
     val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     
     var host by remember { mutableStateOf(settings?.host ?: "") }
     var port by remember { mutableStateOf(settings?.port?.toString() ?: NON_SSL_PORT) }
@@ -107,16 +116,14 @@ fun SettingsScreen(
     var isTesting by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     
-    // Handle connection result
-    LaunchedEffect(connectionResult) {
-        if (connectionResult != null) {
-            try {
-                snackbarHostState.showSnackbar(connectionResult)
-            } finally {
-                // Always call onConnectionResultShown to ensure navigation state is reset
+    // Show result dialog when there's a connection result
+    if (connectionResult != null) {
+        ResultDialog(
+            message = connectionResult,
+            onDismiss = {
                 onConnectionResultShown()
             }
-        }
+        )
     }
     
     // Reset UI state when settings change
@@ -533,26 +540,57 @@ fun SettingsScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
         }
-        
-        AnimatedVisibility(
-            visible = connectionResult != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
+    }
+}
+
+@Composable
+fun ResultDialog(
+    message: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        Card(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
-            SnackbarHost(
-                hostState = snackbarHostState
-            ) { data ->
-                Snackbar(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    snackbarData = data
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
+                
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+                
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("OK")
+                }
             }
         }
     }

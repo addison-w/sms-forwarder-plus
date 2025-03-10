@@ -26,13 +26,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -86,13 +91,32 @@ fun SMSForwarderApp(
     val currentRoute = currentDestination?.route ?: Screen.Home.route
     
     var showConnectionResult by remember { mutableStateOf<String?>(null) }
+    var navigationEnabled by remember { mutableStateOf(true) }
     
-    // Reset navigation controller state when connection result is shown and dismissed
-    LaunchedEffect(showConnectionResult) {
-        if (showConnectionResult == null) {
-            // This ensures the navigation state is refreshed
-            navController.currentBackStackEntry?.let { entry ->
-                entry.savedStateHandle["refreshNavigation"] = System.currentTimeMillis()
+    // Monitor lifecycle to reset navigation state
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                // Re-enable navigation when the app is resumed
+                navigationEnabled = true
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    
+    // Function to navigate safely
+    val navigateTo: (String) -> Unit = { route ->
+        if (navigationEnabled) {
+            navController.navigate(route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
             }
         }
     }
@@ -106,30 +130,36 @@ fun SMSForwarderApp(
                 AppTopBar(
                     currentRoute = currentRoute,
                     onNavigateToHome = { 
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        if (navigationEnabled) {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
                     },
                     onNavigateToSettings = { 
-                        navController.navigate(Screen.Settings.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        if (navigationEnabled) {
+                            navController.navigate(Screen.Settings.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
                     },
                     onNavigateToAbout = { 
-                        navController.navigate(Screen.About.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        if (navigationEnabled) {
+                            navController.navigate(Screen.About.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
                     }
                 )
@@ -149,22 +179,25 @@ fun SMSForwarderApp(
                             label = screen.label,
                             selected = selected,
                             onClick = {
-                                // Clear any connection result when navigating
-                                if (showConnectionResult != null) {
-                                    showConnectionResult = null
-                                }
-                                
-                                navController.navigate(screen.route) {
-                                    // Pop up to the start destination of the graph to
-                                    // avoid building up a large stack of destinations
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                // Only navigate if navigation is enabled
+                                if (navigationEnabled) {
+                                    // Clear any connection result when navigating
+                                    if (showConnectionResult != null) {
+                                        showConnectionResult = null
                                     }
-                                    // Avoid multiple copies of the same destination when
-                                    // reselecting the same item
-                                    launchSingleTop = true
-                                    // Restore state when reselecting a previously selected item
-                                    restoreState = true
+                                    
+                                    navController.navigate(screen.route) {
+                                        // Pop up to the start destination of the graph to
+                                        // avoid building up a large stack of destinations
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        // Avoid multiple copies of the same destination when
+                                        // reselecting the same item
+                                        launchSingleTop = true
+                                        // Restore state when reselecting a previously selected item
+                                        restoreState = true
+                                    }
                                 }
                             },
                             colors = NavigationBarItemDefaults.colors(
@@ -215,7 +248,11 @@ fun SMSForwarderApp(
                             onRequestPermission = onRequestPermission,
                             onStartService = onStartService,
                             onStopService = onStopService,
-                            onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+                            onNavigateToSettings = { 
+                                if (navigationEnabled) {
+                                    navController.navigate(Screen.Settings.route)
+                                }
+                            }
                         )
                     }
                     
@@ -223,11 +260,15 @@ fun SMSForwarderApp(
                         SettingsScreen(
                             settings = settings,
                             onConnectionResult = { result -> 
+                                // Temporarily disable navigation while showing result
+                                navigationEnabled = false
                                 showConnectionResult = result
                             },
                             connectionResult = showConnectionResult,
                             onConnectionResultShown = { 
                                 showConnectionResult = null
+                                // Re-enable navigation after a short delay
+                                navigationEnabled = true
                             }
                         )
                     }
