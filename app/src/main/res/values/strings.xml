@@ -2,6 +2,7 @@
     <string name="app_name">SMS Forwarder Plus</string>
     
     <!-- Main Screen -->
+    <string name="home">Home</string>
     <string name="service_status">Service Status</string>
     <string name="service_running">Service is running</string>
     <string name="service_stopped">Service is stopped</string>

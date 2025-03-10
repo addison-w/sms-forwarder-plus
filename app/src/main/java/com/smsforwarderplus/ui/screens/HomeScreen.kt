@@ -2,7 +2,15 @@ package com.smsforwarderplus.ui.screens
 
 import android.app.Activity
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,16 +18,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,6 +47,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -82,45 +99,51 @@ fun HomeScreen(
         isIgnoringBatteryOptimizations = PermissionUtils.isIgnoringBatteryOptimizations(context)
     }
     
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        contentAlignment = Alignment.Center
     ) {
-        if (!hasSmsPermission) {
-            PermissionCard(onRequestPermission)
-        } else if (settings == null || settings.host.isEmpty() || settings.username.isEmpty() || 
-                  settings.password.isEmpty() || settings.senderEmail.isEmpty() || 
-                  settings.recipientEmail.isEmpty()) {
-            SetupCard(onNavigateToSettings)
-        } else {
-            // Service Status Card - Now more prominent
-            ServiceStatusCard(
-                isServiceRunning = settings.isServiceEnabled,
-                onStartService = onStartService,
-                onStopService = onStopService
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Background Permission Card - Now below Service Status
-            BackgroundPermissionCard(
-                isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations,
-                onRequestDirectExemption = {
-                    Log.d(TAG, "Direct exemption button clicked")
-                    activity?.let {
-                        PermissionUtils.requestBatteryOptimizationExemption(it)
-                    } ?: run {
-                        Log.e(TAG, "Activity is null, cannot request direct exemption")
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (!hasSmsPermission) {
+                PermissionCard(onRequestPermission)
+            } else if (settings == null || settings.host.isEmpty() || settings.username.isEmpty() || 
+                      settings.password.isEmpty() || settings.senderEmail.isEmpty() || 
+                      settings.recipientEmail.isEmpty()) {
+                SetupCard(onNavigateToSettings)
+            } else {
+                // Service Status Card - Now more prominent and minimalist
+                ServiceStatusCard(
+                    isServiceRunning = settings.isServiceEnabled,
+                    onToggleService = { isRunning ->
+                        if (isRunning) onStartService() else onStopService()
                     }
-                },
-                onOpenBatterySettings = {
-                    Log.d(TAG, "Battery settings button clicked")
-                    PermissionUtils.openBatteryOptimizationSettings(context)
-                }
-            )
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Background Permission Card - Now more subtle
+                BackgroundPermissionCard(
+                    isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations,
+                    onRequestDirectExemption = {
+                        Log.d(TAG, "Direct exemption button clicked")
+                        activity?.let {
+                            PermissionUtils.requestBatteryOptimizationExemption(it)
+                        } ?: run {
+                            Log.e(TAG, "Activity is null, cannot request direct exemption")
+                        }
+                    },
+                    onOpenBatterySettings = {
+                        Log.d(TAG, "Battery settings button clicked")
+                        PermissionUtils.openBatteryOptimizationSettings(context)
+                    }
+                )
+            }
         }
     }
 }
@@ -131,22 +154,40 @@ fun BackgroundPermissionCard(
     onRequestDirectExemption: () -> Unit,
     onOpenBatterySettings: () -> Unit
 ) {
-    // Less prominent card with lower elevation
+    // More subtle card with border instead of elevation
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .padding(horizontal = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.background_permission),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.BatteryChargingFull,
+                    contentDescription = null,
+                    tint = if (isIgnoringBatteryOptimizations) 
+                        MaterialTheme.colorScheme.primary 
+                    else 
+                        MaterialTheme.colorScheme.outline
+                )
+                
+                Text(
+                    text = stringResource(R.string.background_permission),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
             
             Spacer(modifier = Modifier.height(8.dp))
             
@@ -173,39 +214,47 @@ fun BackgroundPermissionCard(
                 )
             }
             
-            if (!isIgnoringBatteryOptimizations) {
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = stringResource(R.string.background_explanation),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onRequestDirectExemption,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.enable_background),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+            AnimatedVisibility(
+                visible = !isIgnoringBatteryOptimizations,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(8.dp))
                     
-                    OutlinedButton(
-                        onClick = onOpenBatterySettings,
-                        modifier = Modifier.weight(1f)
+                    Text(
+                        text = stringResource(R.string.background_explanation),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.open_battery_settings),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Button(
+                            onClick = onRequestDirectExemption,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.enable_background),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                        
+                        OutlinedButton(
+                            onClick = onOpenBatterySettings,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.open_battery_settings),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
                     }
                 }
             }
@@ -215,19 +264,20 @@ fun BackgroundPermissionCard(
 
 @Composable
 fun PermissionCard(onRequestPermission: () -> Unit) {
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = stringResource(R.string.permission_required),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
             
@@ -235,16 +285,21 @@ fun PermissionCard(onRequestPermission: () -> Unit) {
             
             Text(
                 text = stringResource(R.string.permission_explanation),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             Button(
                 onClick = onRequestPermission,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
             ) {
-                Text(text = stringResource(R.string.grant_permission))
+                Text(
+                    text = stringResource(R.string.grant_permission),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
@@ -252,19 +307,20 @@ fun PermissionCard(onRequestPermission: () -> Unit) {
 
 @Composable
 fun SetupCard(onNavigateToSettings: () -> Unit) {
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Setup Required",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
             
@@ -272,22 +328,25 @@ fun SetupCard(onNavigateToSettings: () -> Unit) {
             
             Text(
                 text = "Please configure your SMTP settings to start forwarding SMS messages.",
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             Button(
                 onClick = onNavigateToSettings,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Settings,
+                    imageVector = Icons.Rounded.Settings,
                     contentDescription = null
                 )
                 Text(
                     text = stringResource(R.string.settings),
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.padding(start = 8.dp),
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }
@@ -297,27 +356,52 @@ fun SetupCard(onNavigateToSettings: () -> Unit) {
 @Composable
 fun ServiceStatusCard(
     isServiceRunning: Boolean,
-    onStartService: () -> Unit,
-    onStopService: () -> Unit
+    onToggleService: (Boolean) -> Unit
 ) {
-    // More prominent card with higher elevation and larger size
-    Card(
+    // More prominent card with subtle elevation and border
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = stringResource(R.string.service_status),
-                style = MaterialTheme.typography.headlineSmall,
+                text = "SMS Forwarding",
+                style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Custom switch with thumb icon
+            Switch(
+                checked = isServiceRunning,
+                onCheckedChange = onToggleService,
+                thumbContent = if (isServiceRunning) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                        )
+                    }
+                } else null,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                    checkedBorderColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
             
             Text(
                 text = if (isServiceRunning) 
@@ -328,38 +412,36 @@ fun ServiceStatusCard(
                 color = if (isServiceRunning) 
                     MaterialTheme.colorScheme.primary 
                 else 
-                    MaterialTheme.colorScheme.error
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Switch(
-                checked = isServiceRunning,
-                onCheckedChange = { isChecked ->
-                    if (isChecked) onStartService() else onStopService()
-                }
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
             
             Spacer(modifier = Modifier.height(24.dp))
             
+            // Single button that changes based on state
             if (isServiceRunning) {
                 OutlinedButton(
-                    onClick = onStopService,
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = { onToggleService(false) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Text(
                         text = stringResource(R.string.stop_service),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.labelLarge
                     )
                 }
             } else {
                 Button(
-                    onClick = onStartService,
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = { onToggleService(true) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
                     Text(
                         text = stringResource(R.string.start_service),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.labelLarge
                     )
                 }
             }

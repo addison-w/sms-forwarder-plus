@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -98,8 +99,21 @@ fun SMSForwarderPlusTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            
+            // Set the status bar color to be transparent for edge-to-edge design
+            window.statusBarColor = Color.Transparent.toArgb()
+            
+            // Set the navigation bar to be transparent with a slight scrim for visibility
+            window.navigationBarColor = colorScheme.scrim.toArgb()
+            
+            // Configure the system bars
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
+            
+            // Enable edge-to-edge
+            WindowCompat.setDecorFitsSystemWindows(window, false)
         }
     }
 

@@ -1,5 +1,6 @@
 package com.smsforwarderplus.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,93 +33,83 @@ fun AboutScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(24.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = stringResource(R.string.about_title),
             style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        AboutSection(
+            title = stringResource(R.string.version),
+            content = appVersion
         )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        AboutSection(
+            title = stringResource(R.string.description),
+            content = stringResource(R.string.app_description)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        AboutSection(
+            title = stringResource(R.string.features),
+            content = stringResource(R.string.app_features)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        AboutSection(
+            title = stringResource(R.string.privacy),
+            content = stringResource(R.string.privacy_policy)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        AboutSection(
+            title = stringResource(R.string.license),
+            content = stringResource(R.string.license_info)
+        )
+    }
+}
+
+@Composable
+fun AboutSection(
+    title: String,
+    content: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.version),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = appVersion,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
-                
-                Text(
-                    text = stringResource(R.string.description),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = stringResource(R.string.app_description),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
-                
-                Text(
-                    text = stringResource(R.string.features),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = stringResource(R.string.app_features),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
-                
-                Text(
-                    text = stringResource(R.string.privacy),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = stringResource(R.string.privacy_policy),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
-                
-                Text(
-                    text = stringResource(R.string.license),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = stringResource(R.string.license_info),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 } 
