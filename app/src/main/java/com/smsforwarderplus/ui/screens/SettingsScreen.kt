@@ -42,6 +42,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val TAG = "SettingsScreen"
+private const val SSL_PORT = "465"
+private const val NON_SSL_PORT = "587"
+
 @Composable
 fun SettingsScreen(
     settings: SMTPSettings?,
@@ -49,7 +53,6 @@ fun SettingsScreen(
     connectionResult: String?,
     onConnectionResultShown: () -> Unit
 ) {
-    val TAG = "SettingsScreen"
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     val emailService = remember { EmailService() }
@@ -57,12 +60,21 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     
     var host by remember { mutableStateOf(settings?.host ?: "") }
-    var port by remember { mutableStateOf(settings?.port?.toString() ?: "587") }
+    var port by remember { mutableStateOf(settings?.port?.toString() ?: NON_SSL_PORT) }
     var username by remember { mutableStateOf(settings?.username ?: "") }
     var password by remember { mutableStateOf(settings?.password ?: "") }
     var senderEmail by remember { mutableStateOf(settings?.senderEmail ?: "") }
     var recipientEmail by remember { mutableStateOf(settings?.recipientEmail ?: "") }
     var useSSL by remember { mutableStateOf(settings?.useSSL ?: false) }
+    
+    // Update port when SSL toggle changes
+    LaunchedEffect(useSSL) {
+        // Only auto-update port if it's one of the standard ports
+        if (port == SSL_PORT || port == NON_SSL_PORT) {
+            port = if (useSSL) SSL_PORT else NON_SSL_PORT
+            Log.d(TAG, "Auto-updated port to $port based on SSL setting: $useSSL")
+        }
+    }
     
     var isTesting by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
@@ -90,6 +102,7 @@ fun SettingsScreen(
             value = host,
             onValueChange = { host = it },
             label = { Text(stringResource(R.string.smtp_host)) },
+            placeholder = { Text("smtp.gmail.com") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -100,6 +113,7 @@ fun SettingsScreen(
             value = port,
             onValueChange = { port = it },
             label = { Text(stringResource(R.string.smtp_port)) },
+            placeholder = { Text(if (useSSL) SSL_PORT else NON_SSL_PORT) },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true
@@ -111,6 +125,7 @@ fun SettingsScreen(
             value = username,
             onValueChange = { username = it },
             label = { Text(stringResource(R.string.smtp_username)) },
+            placeholder = { Text("your.email@gmail.com") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -121,6 +136,7 @@ fun SettingsScreen(
             value = password,
             onValueChange = { password = it },
             label = { Text(stringResource(R.string.smtp_password)) },
+            placeholder = { Text("password or app password") },
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true
@@ -132,6 +148,7 @@ fun SettingsScreen(
             value = senderEmail,
             onValueChange = { senderEmail = it },
             label = { Text(stringResource(R.string.sender_email)) },
+            placeholder = { Text("your.email@gmail.com") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true
@@ -143,6 +160,7 @@ fun SettingsScreen(
             value = recipientEmail,
             onValueChange = { recipientEmail = it },
             label = { Text(stringResource(R.string.recipient_email)) },
+            placeholder = { Text("recipient@example.com") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true
@@ -158,7 +176,10 @@ fun SettingsScreen(
         ) {
             Checkbox(
                 checked = useSSL,
-                onCheckedChange = { useSSL = it }
+                onCheckedChange = { 
+                    useSSL = it
+                    // Port will be updated by the LaunchedEffect
+                }
             )
             
             Text(
