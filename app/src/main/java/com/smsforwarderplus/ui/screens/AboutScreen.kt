@@ -28,7 +28,7 @@ import com.smsforwarderplus.R
 fun AboutScreen() {
     val context = LocalContext.current
     // Hardcoded version instead of using BuildConfig
-    val appVersion = "1.0.0"
+    val appVersion = "1.0.4"
     
     Column(
         modifier = Modifier

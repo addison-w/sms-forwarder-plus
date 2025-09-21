@@ -61,6 +61,6 @@
     <string name="grant_permission">Grant Permission</string>
     
     <!-- Email -->
-    <string name="email_subject">SMS from %1$s</string>
-    <string name="email_body">From: %1$s\nTime: %2$s\n\nMessage: %3$s</string>
+    <string name="email_subject">SMS from %1$s to %2$s</string>
+    <string name="email_body">From: %1$s\nTo: %2$s\nTime: %3$s\n\nMessage: %4$s</string>
 </resources> 

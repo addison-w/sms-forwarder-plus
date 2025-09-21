@@ -1,7 +1,11 @@
 package com.smsforwarderplus.utils
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.telephony.SmsMessage
+import android.telephony.TelephonyManager
+import androidx.core.app.ActivityCompat
 import com.smsforwarderplus.R
 import com.smsforwarderplus.data.SMTPSettings
 import com.smsforwarderplus.email.EmailService
@@ -13,6 +17,25 @@ import java.util.Locale
 object SmsUtils {
     
     /**
+     * Get the device's phone number
+     * @param context The application context
+     * @return The device's phone number or "Unknown" if not available
+     */
+    private fun getDevicePhoneNumber(context: Context): String {
+        return try {
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) 
+                == PackageManager.PERMISSION_GRANTED) {
+                telephonyManager.line1Number?.takeIf { it.isNotEmpty() } ?: "Unknown"
+            } else {
+                "Unknown"
+            }
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+    
+    /**
      * Format an SMS message for email
      * @param context The application context
      * @param sms The SMS message to format
@@ -20,12 +43,13 @@ object SmsUtils {
      */
     fun formatSmsForEmail(context: Context, sms: SmsMessage): Pair<String, String> {
         val sender = sms.originatingAddress ?: "Unknown"
+        val recipient = getDevicePhoneNumber(context)
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             .format(Date(sms.timestampMillis))
         val messageBody = sms.messageBody
         
-        val subject = context.getString(R.string.email_subject, sender)
-        val body = context.getString(R.string.email_body, sender, timestamp, messageBody)
+        val subject = context.getString(R.string.email_subject, sender, recipient)
+        val body = context.getString(R.string.email_body, sender, recipient, timestamp, messageBody)
         
         return Pair(subject, body)
     }
@@ -38,12 +62,13 @@ object SmsUtils {
      */
     fun formatSmsForEmail(context: Context, sms: CombinedSmsMessage): Pair<String, String> {
         val sender = sms.originatingAddress
+        val recipient = getDevicePhoneNumber(context)
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             .format(Date(sms.timestampMillis))
         val messageBody = sms.messageBody
         
-        val subject = context.getString(R.string.email_subject, sender)
-        val body = context.getString(R.string.email_body, sender, timestamp, messageBody)
+        val subject = context.getString(R.string.email_subject, sender, recipient)
+        val body = context.getString(R.string.email_body, sender, recipient, timestamp, messageBody)
         
         return Pair(subject, body)
     }
