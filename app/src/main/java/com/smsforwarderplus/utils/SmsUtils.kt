@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.telephony.SmsMessage
+import android.telephony.SubscriptionInfo
+import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import androidx.core.app.ActivityCompat
 import com.smsforwarderplus.R
@@ -17,19 +19,37 @@ import java.util.Locale
 object SmsUtils {
     
     /**
-     * Get the device's phone number
+     * Get the device's phone number for a specific subscription ID
      * @param context The application context
-     * @return The device's phone number or "Unknown" if not available
+     * @param subscriptionId The subscription ID for dual SIM support
+     * @return The device's phone number or "SIM1"/"SIM2"/etc. if not available
      */
-    private fun getDevicePhoneNumber(context: Context): String {
+    private fun getDevicePhoneNumber(context: Context, subscriptionId: Int = SubscriptionManager.INVALID_SUBSCRIPTION_ID): String {
         return try {
-            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) 
-                == PackageManager.PERMISSION_GRANTED) {
-                telephonyManager.line1Number?.takeIf { it.isNotEmpty() } ?: "Unknown"
-            } else {
-                "Unknown"
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+                return "Unknown"
             }
+
+            val subscriptionManager = context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+
+            if (subscriptionId != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                // Get phone number for specific subscription
+                val subscriptionInfo = subscriptionManager.getActiveSubscriptionInfo(subscriptionId)
+                if (subscriptionInfo != null) {
+                    val phoneNumber = subscriptionInfo.number
+                    if (!phoneNumber.isNullOrEmpty()) {
+                        return phoneNumber
+                    }
+                    // Fall back to SIM slot display name if phone number is not available
+                    val simSlotIndex = subscriptionInfo.simSlotIndex
+                    return "SIM${simSlotIndex + 1}"
+                }
+            }
+
+            // Fallback to default telephony manager
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            telephonyManager.line1Number?.takeIf { it.isNotEmpty() } ?: "SIM1"
         } catch (e: Exception) {
             "Unknown"
         }
@@ -62,14 +82,14 @@ object SmsUtils {
      */
     fun formatSmsForEmail(context: Context, sms: CombinedSmsMessage): Pair<String, String> {
         val sender = sms.originatingAddress
-        val recipient = getDevicePhoneNumber(context)
+        val recipient = getDevicePhoneNumber(context, sms.subscriptionId)
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             .format(Date(sms.timestampMillis))
         val messageBody = sms.messageBody
-        
+
         val subject = context.getString(R.string.email_subject, sender, recipient)
         val body = context.getString(R.string.email_body, sender, recipient, timestamp, messageBody)
-        
+
         return Pair(subject, body)
     }
     

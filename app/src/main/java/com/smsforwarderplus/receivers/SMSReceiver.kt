@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import android.telephony.SmsMessage
+import android.telephony.SubscriptionManager
 import android.util.Log
 import com.smsforwarderplus.data.PreferencesManager
 import com.smsforwarderplus.utils.SmsUtils
@@ -23,8 +24,10 @@ class SMSReceiver : BroadcastReceiver() {
         if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             if (messages.isNotEmpty()) {
+                // Extract subscription ID for dual SIM support
+                val subscriptionId = intent.getIntExtra("subscription", SubscriptionManager.INVALID_SUBSCRIPTION_ID)
                 // Combine all message parts into a single SMS object
-                val combinedSms = combineMessageParts(messages)
+                val combinedSms = combineMessageParts(messages, subscriptionId)
                 // Forward the combined message
                 forwardSMS(context, combinedSms)
             }
@@ -35,21 +38,22 @@ class SMSReceiver : BroadcastReceiver() {
      * Combines multiple SmsMessage parts into a single SmsMessage with the complete text.
      * This ensures that multi-part SMS messages are treated as a single message.
      */
-    private fun combineMessageParts(messageParts: Array<SmsMessage>): CombinedSmsMessage {
+    private fun combineMessageParts(messageParts: Array<SmsMessage>, subscriptionId: Int): CombinedSmsMessage {
         // Use the first message part for metadata
         val firstPart = messageParts[0]
         val originatingAddress = firstPart.originatingAddress ?: "Unknown"
         val timestampMillis = firstPart.timestampMillis
-        
+
         // Combine all message bodies
         val fullMessageBody = messageParts.joinToString("") { it.messageBody }
-        
-        Log.d(TAG, "Combined ${messageParts.size} message parts into a single message")
-        
+
+        Log.d(TAG, "Combined ${messageParts.size} message parts into a single message with subscription ID: $subscriptionId")
+
         return CombinedSmsMessage(
             originatingAddress = originatingAddress,
             messageBody = fullMessageBody,
-            timestampMillis = timestampMillis
+            timestampMillis = timestampMillis,
+            subscriptionId = subscriptionId
         )
     }
 
@@ -78,6 +82,7 @@ class SMSReceiver : BroadcastReceiver() {
     data class CombinedSmsMessage(
         val originatingAddress: String,
         val messageBody: String,
-        val timestampMillis: Long
+        val timestampMillis: Long,
+        val subscriptionId: Int
     )
 } 
